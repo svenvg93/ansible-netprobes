@@ -1,7 +1,7 @@
 ---
 speedtest_install: true
 speedtest_version: 1.2.0
-# Telegraf runs this exact path (see ../ansible roles/telegraf), so keep it here.
+# Telegraf on the probes runs this exact path, so keep it here.
 speedtest_bin_path: /usr/bin/speedtest
 
 speedtest_arch_map:
