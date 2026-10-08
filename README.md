@@ -7,6 +7,9 @@
 | `playbooks/maintenance.yml` | Package holds, apt upgrade + autoremove, journal cleanup, reboot if required (25% of hosts at a time), reports failed units, checks the Beszel agent is running |
 | `playbooks/site.yml`        | bootstrap → beszel → maintenance |
 
+How each part works in detail: [docs/bootstrap.md](docs/bootstrap.md), [docs/beszel.md](docs/beszel.md),
+[docs/maintenance.md](docs/maintenance.md).
+
 ## Setup
 
 ```bash

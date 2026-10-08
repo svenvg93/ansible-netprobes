@@ -61,7 +61,8 @@ ansible-playbook playbooks/<play>.yml --limit netprobe01 --check --diff   # dry 
   `maintenance_disk_warn_percent`; the disk check was removed because Beszel covers it).
 - Secrets go only in `inventory/group_vars/netprobes/vault.yml` (ansible-vault, git-ignored).
   `vault.yml.example` documents the keys.
-- Keep `README.md` in sync when behaviour or commands change.
+- Keep `README.md` and `docs/` (`bootstrap.md`, `beszel.md`, `maintenance.md`) in sync when
+  behaviour, settings or commands change.
 - Commit only when asked. Commits end with the `Co-Authored-By` trailer from the session instructions.
   `.claude/` is git-ignored on purpose. Remote: `github.com/svenvg93/ansible-netprobes`.
 
