@@ -1,0 +1,14 @@
+---
+maintenance_upgrade: dist
+maintenance_autoremove: true
+maintenance_reboot_if_required: true
+maintenance_no_reboot_hosts: []
+maintenance_reboot_timeout: 600
+maintenance_journal_max_age: 4weeks
+maintenance_hold_packages: []
+# Held only during the upgrade (released afterwards): packages that update themselves
+# and would cut the connection if apt upgraded them.
+maintenance_skip_upgrade_packages:
+  - tailscale
+maintenance_verify_beszel: true
+maintenance_beszel_service: beszel-agent.service

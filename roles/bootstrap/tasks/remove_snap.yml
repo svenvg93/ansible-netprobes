@@ -1,0 +1,78 @@
+---
+- name: Check whether snapd is installed
+  ansible.builtin.command: dpkg-query -W -f='${db:Status-Status}' snapd
+  register: bootstrap_snapd_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Remove snaps, purge snapd and block reinstall
+  when: bootstrap_snapd_status.rc == 0 and bootstrap_snapd_status.stdout == 'installed'
+  block:
+    - name: List installed snaps
+      ansible.builtin.command: snap list
+      register: bootstrap_snap_list
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Work out removal order (apps, then bases)
+      ansible.builtin.set_fact:
+        bootstrap_snap_names: >-
+          {{ (bootstrap_snap_list.stdout_lines[1:] | default([]))
+             | map('split') | map('first') | list
+             if bootstrap_snap_list.rc == 0 else [] }}
+
+    - name: Split snaps into apps and bases
+      ansible.builtin.set_fact:
+        bootstrap_snap_bases: "{{ bootstrap_snap_names | select('match', '^(core[0-9]*|bare)$') | list }}"
+        bootstrap_snap_apps: >-
+          {{ bootstrap_snap_names
+             | difference(bootstrap_snap_names | select('match', '^(core[0-9]*|bare)$') | list)
+             | difference(['snapd']) | list }}
+
+    - name: Remove application snaps
+      ansible.builtin.command: "snap remove --purge {{ item }}"
+      loop: "{{ bootstrap_snap_apps }}"
+      changed_when: true
+
+    - name: Remove base snaps
+      ansible.builtin.command: "snap remove --purge {{ item }}"
+      loop: "{{ bootstrap_snap_bases }}"
+      changed_when: true
+
+    - name: Remove the snapd snap itself
+      ansible.builtin.command: snap remove --purge snapd
+      when: "'snapd' in bootstrap_snap_names"
+      changed_when: true
+
+    - name: Purge the snapd package
+      ansible.builtin.apt:
+        name: snapd
+        state: absent
+        purge: true
+        autoremove: true
+        lock_timeout: 300
+
+- name: Prevent snapd from being reinstalled
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/nosnap.pref
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible: keep snapd out of this host
+      Package: snapd
+      Pin: release a=*
+      Pin-Priority: -10
+
+- name: Remove leftover snap directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /snap
+    - /var/snap
+    - /var/lib/snapd
+    - /var/cache/snapd
+    - /root/snap

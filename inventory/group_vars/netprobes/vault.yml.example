@@ -1,0 +1,7 @@
+# Copy to vault.yml and encrypt it:
+#   cp inventory/group_vars/netprobes/vault.yml.example inventory/group_vars/netprobes/vault.yml
+#   ansible-vault encrypt inventory/group_vars/netprobes/vault.yml
+# Then add --ask-vault-pass when running playbooks.
+vault_agent_token: "replace-me"
+# Only needed if your sudo user requires a password:
+# ansible_become_password: "replace-me"

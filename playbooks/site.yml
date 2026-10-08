@@ -1,0 +1,11 @@
+---
+# Full build: bootstrap, monitoring, then patch.
+# Beszel goes before maintenance because maintenance fails hosts whose agent isn't running.
+- name: Bootstrap
+  ansible.builtin.import_playbook: bootstrap.yml
+
+- name: Beszel agent
+  ansible.builtin.import_playbook: beszel.yml
+
+- name: Maintenance
+  ansible.builtin.import_playbook: maintenance.yml

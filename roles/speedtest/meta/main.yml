@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  role_name: speedtest
+  author: cpe
+  license: MIT
+  description: Install the Ookla Speedtest CLI from Ookla's release tarball
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: [all]
+dependencies: []

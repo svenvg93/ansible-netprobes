@@ -1,0 +1,110 @@
+---
+# Holds are only added here; release one with: apt-mark unhold <pkg>
+- name: Hold selected packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: "{{ maintenance_hold_packages }}"
+
+- name: Gather installed packages
+  ansible.builtin.package_facts:
+    manager: apt
+
+# Upgrading tailscale restarts tailscaled, which drops the Tailscale SSH session
+# mid-apt and can leave dpkg half-configured. Tailscale's own auto-update handles it.
+- name: Upgrade packages, skipping the ones that update themselves
+  vars:
+    maintenance_temp_holds: >-
+      {{ maintenance_skip_upgrade_packages
+         | difference(maintenance_hold_packages)
+         | select('in', ansible_facts['packages']) | list }}
+  block:
+    - name: Temporarily hold self-updating packages
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop: "{{ maintenance_temp_holds }}"
+
+    - name: Upgrade packages
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+        upgrade: "{{ maintenance_upgrade }}"
+        autoremove: "{{ maintenance_autoremove }}"
+        autoclean: true
+        lock_timeout: 300
+      register: maintenance_apt
+
+  always:
+    # Released again so Tailscale's own updater is never blocked.
+    - name: Release temporary holds
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: install
+      loop: "{{ maintenance_temp_holds }}"
+
+- name: Vacuum old journal logs
+  ansible.builtin.command: journalctl --vacuum-time={{ maintenance_journal_max_age }}
+  register: maintenance_journal
+  changed_when: maintenance_journal.stderr is search('freeing [1-9]')
+
+- name: Check if a reboot is required
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: maintenance_reboot_file
+
+- name: Reboot
+  ansible.builtin.reboot:
+    reboot_timeout: "{{ maintenance_reboot_timeout }}"
+    msg: Rebooting for package updates (Ansible maintenance)
+  when:
+    - maintenance_reboot_file.stat.exists
+    - maintenance_reboot_if_required | bool
+    - inventory_hostname not in maintenance_no_reboot_hosts
+    - ansible_connection | default('ssh') != 'local'
+  register: maintenance_rebooted
+
+# service_facts only covers services; this also catches failed timers, mounts, etc.
+- name: List failed systemd units
+  ansible.builtin.command: systemctl list-units --state=failed --plain --no-legend  # noqa: command-instead-of-module
+  register: maintenance_failed_units
+  changed_when: false
+  check_mode: false
+
+- name: Build report
+  ansible.builtin.set_fact:
+    maintenance_report:
+      packages_changed: "{{ maintenance_apt is changed }}"
+      reboot_required: "{{ maintenance_reboot_file.stat.exists }}"
+      rebooted: "{{ maintenance_rebooted is changed }}"
+      failed_units: "{{ maintenance_failed_units.stdout_lines | map('split') | map('first') | list }}"
+
+- name: Report
+  ansible.builtin.debug:
+    var: maintenance_report
+
+- name: Warn about pending reboot
+  ansible.builtin.debug:
+    msg: "{{ inventory_hostname }} needs a reboot but was not rebooted."
+  when: maintenance_report.reboot_required and not maintenance_report.rebooted
+  changed_when: true
+
+- name: Warn about failed systemd units
+  ansible.builtin.debug:
+    msg: "Failed units: {{ maintenance_report.failed_units | join(', ') }}"
+  when: maintenance_report.failed_units | length > 0
+  changed_when: true
+
+- name: Gather service state
+  ansible.builtin.service_facts:
+  when: maintenance_verify_beszel | bool
+
+# Skipped on hosts without the agent; run playbooks/beszel.yml to install it.
+- name: Verify the Beszel agent is running
+  ansible.builtin.assert:
+    that: ansible_facts['services'][maintenance_beszel_service]['state'] == 'running'
+    fail_msg: "{{ maintenance_beszel_service }} is not running on {{ inventory_hostname }}"
+    quiet: true
+  when:
+    - maintenance_verify_beszel | bool
+    - maintenance_beszel_service in ansible_facts['services']

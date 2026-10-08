@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  role_name: bootstrap
+  author: cpe
+  license: MIT
+  description: Baseline setup for Ubuntu hosts (timezone, packages, snap removal)
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: [all]
+dependencies: []

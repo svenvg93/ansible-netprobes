@@ -1,0 +1,17 @@
+---
+- name: Timezone
+  ansible.builtin.import_tasks: timezone.yml
+  tags: [timezone]
+
+- name: Packages
+  ansible.builtin.import_tasks: packages.yml
+  tags: [packages]
+
+- name: Remove snap
+  ansible.builtin.import_tasks: remove_snap.yml
+  when: bootstrap_remove_snap | bool
+  tags: [snap]
+
+- name: Tailscale auto-update
+  ansible.builtin.import_tasks: tailscale.yml
+  tags: [tailscale]

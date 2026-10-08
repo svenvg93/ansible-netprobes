@@ -1,0 +1,41 @@
+---
+# ---- Beszel agent (community.beszel.agent) ----
+# Public key from the hub's "Add System" dialog. It's a public key, so plain text is fine.
+agent_public_key: "ssh-ed25519 AAAA...replace-me"
+
+agent_port: 45876
+agent_service_enabled: true
+
+# Agents connect out to the hub over WebSocket and register themselves.
+# The hub is the "beszel" Tailscale node from ~/docker/beszel.
+agent_hub_url: https://beszel.tail294b9a.ts.net
+# Universal token from the hub (Settings > Tokens & Fingerprints), kept in vault.yml.
+agent_token: "{{ vault_agent_token }}"
+
+# SMART monitoring. Every probe has one NVMe drive: smartctl uses the controller
+# (/dev/nvme0); the namespace (/dev/nvme0n1) is listed too so the unit allows both.
+agent_smart_disks:
+  - /dev/nvme0
+  - /dev/nvme0n1
+
+# ---- Maintenance (roles/maintenance) ----
+maintenance_upgrade: dist          # dist | safe | full | yes
+maintenance_reboot_if_required: true
+maintenance_journal_max_age: 4weeks
+# Packages never upgraded by maintenance (e.g. a kernel you need to stay on).
+maintenance_hold_packages: []
+# Fail the host if beszel-agent is installed but not running after maintenance.
+maintenance_verify_beszel: true
+
+# ---- Bootstrap (roles/bootstrap) ----
+bootstrap_timezone: Europe/Amsterdam
+bootstrap_remove_snap: true
+bootstrap_remove_packages:
+  - lxd-installer
+  - modemmanager
+  - landscape-common
+  - popularity-contest
+  - needrestart
+
+# ---- Speedtest (roles/speedtest) ----
+speedtest_install: true

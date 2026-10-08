@@ -1,0 +1,16 @@
+---
+# Patch, clean up and (if needed) reboot hosts a few at a time.
+#   ansible-playbook playbooks/maintenance.yml -K                     # -K only for the controller (cpe-srv)
+#   ansible-playbook playbooks/maintenance.yml --limit netprobes        # netprobes only, no -K needed
+#   ansible-playbook playbooks/maintenance.yml -K -e maintenance_reboot_if_required=false
+- name: Maintenance (netprobes)
+  hosts: netprobes
+  serial: "{{ maintenance_serial | default('25%') }}"
+  roles:
+    - maintenance
+
+# Last, so a Docker upgrade restarting the Beszel hub doesn't happen mid-run. Never rebooted.
+- name: Maintenance (controller)
+  hosts: controller
+  roles:
+    - maintenance

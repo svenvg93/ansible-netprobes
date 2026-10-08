@@ -1,0 +1,28 @@
+---
+# Install / update the Beszel agent.
+#   ansible-playbook playbooks/beszel.yml --ask-vault-pass
+#   ansible-playbook playbooks/beszel.yml --ask-vault-pass -e agent_state=absent   # uninstall
+- name: Beszel agent
+  hosts: netprobes
+  pre_tasks:
+    - name: Check the hub token is available
+      ansible.builtin.assert:
+        that: vault_agent_token is defined and vault_agent_token not in ['', 'replace-me']
+        fail_msg: >-
+          vault_agent_token is not set. Create inventory/group_vars/netprobes/vault.yml
+          from vault.yml.example, encrypt it, and run with --ask-vault-pass.
+        quiet: true
+      when: agent_state | default('present') == 'present'
+
+  roles:
+    - role: community.beszel.agent
+
+  post_tasks:
+    - name: Check the agent is running
+      ansible.builtin.systemd_service:
+        name: beszel-agent
+      register: beszel_agent_unit
+      failed_when: beszel_agent_unit.status.ActiveState != 'active'
+      when:
+        - agent_state | default('present') == 'present'
+        - not ansible_check_mode

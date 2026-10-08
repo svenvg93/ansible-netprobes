@@ -1,0 +1,26 @@
+---
+speedtest_install: true
+speedtest_version: 1.2.0
+# Telegraf runs this exact path (see ../ansible roles/telegraf), so keep it here.
+speedtest_bin_path: /usr/bin/speedtest
+
+speedtest_arch_map:
+  x86_64: x86_64
+  aarch64: aarch64
+speedtest_arch: "{{ speedtest_arch_map[ansible_facts['architecture']] }}"
+speedtest_url: https://install.speedtest.net/app/cli/ookla-speedtest-{{ speedtest_version }}-linux-{{ speedtest_arch }}.tgz
+# sha256 of the 1.2.0 tarballs; update together with speedtest_version.
+speedtest_checksums:
+  x86_64: sha256:5690596c54ff9bed63fa3732f818a05dbc2db19ad36ed68f21ca5f64d5cfeeb7
+  aarch64: sha256:3953d231da3783e2bf8904b6dd72767c5c6e533e163d3742fd0437affa431bd3
+
+# Left over from the old apt-based install; removed so apt never touches speedtest again.
+speedtest_legacy_packages:
+  - speedtest
+  - speedtest-cli
+speedtest_legacy_files:
+  - /etc/apt/sources.list.d/speedtest.list
+  - /etc/apt/sources.list.d/ookla_speedtest-cli.list
+  - /etc/apt/sources.list.d/ookla_speedtest-cli.sources
+  - /etc/apt/keyrings/ookla_speedtest-cli-archive-keyring.gpg
+  - /etc/apt/keyrings/ookla_speedtest-cli.asc

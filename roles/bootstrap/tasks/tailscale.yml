@@ -1,0 +1,15 @@
+---
+# Tailscale updates itself so apt maintenance never has to (see roles/maintenance).
+- name: Read Tailscale preferences
+  ansible.builtin.command: tailscale debug prefs
+  register: bootstrap_tailscale_prefs
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Enable Tailscale auto-update
+  ansible.builtin.command: tailscale set --auto-update=true
+  changed_when: true
+  when:
+    - bootstrap_tailscale_prefs.rc == 0
+    - not (bootstrap_tailscale_prefs.stdout | from_json).get('AutoUpdate', {}).get('Apply', false)

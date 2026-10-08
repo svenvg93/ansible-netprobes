@@ -1,0 +1,8 @@
+---
+bootstrap_timezone: UTC
+bootstrap_remove_snap: true
+bootstrap_remove_packages: []
+bootstrap_install_packages:
+  - ca-certificates
+  - curl
+  - gnupg
