@@ -26,7 +26,7 @@ Netprobes are managed as `root` over Tailscale SSH, so no `-K` is needed. Only r
 
 ```bash
 ansible-playbook playbooks/bootstrap.yml                     # new or rebuilt hosts
-ansible-playbook playbooks/bootstrap.yml --tags snap         # just one part: timezone | packages | snap | speedtest
+ansible-playbook playbooks/bootstrap.yml --tags packages     # just one part: timezone | packages | tailscale | speedtest
 
 ansible-playbook playbooks/beszel.yml --ask-vault-pass --check --diff     # dry run
 ansible-playbook playbooks/beszel.yml --ask-vault-pass                    # install / update agents

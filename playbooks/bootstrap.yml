@@ -1,7 +1,7 @@
 ---
 # Baseline setup for new or rebuilt netprobes.
 #   ansible-playbook playbooks/bootstrap.yml
-#   ansible-playbook playbooks/bootstrap.yml --tags timezone|packages|snap|speedtest
+#   ansible-playbook playbooks/bootstrap.yml --tags timezone|packages|tailscale|speedtest
 - name: Bootstrap
   hosts: netprobes
   roles:

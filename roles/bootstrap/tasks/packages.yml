@@ -16,3 +16,7 @@
     autoremove: true
     lock_timeout: 300
   when: bootstrap_remove_packages | length > 0
+
+# snapd needs its snaps removed in order before the package can go, so it has its own tasks.
+- name: Remove snap
+  ansible.builtin.import_tasks: remove_snap.yml

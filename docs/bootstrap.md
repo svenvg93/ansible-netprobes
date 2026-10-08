@@ -14,7 +14,7 @@ current state first, so running it again on an existing probe only fixes what ha
 | After changing the speedtest version | `ansible-playbook playbooks/bootstrap.yml --tags speedtest` |
 | See what would change | add `--check --diff` to any of the above |
 
-Tags: `timezone`, `packages`, `snap`, `tailscale`, `speedtest`.
+Tags: `timezone`, `packages`, `tailscale`, `speedtest`.
 
 For a completely new probe, `playbooks/site.yml` runs bootstrap, then the Beszel agent, then
 maintenance.
@@ -35,10 +35,12 @@ Sets the system timezone to `bootstrap_timezone`.
 | `landscape-common` | Canonical Landscape client and login message; not used |
 | `popularity-contest` | Sends package usage statistics to Ubuntu |
 | `needrestart` | Restarts services automatically after apt, including `tailscaled` and `ssh`, which cuts the Ansible session mid-run |
+| `snapd` | Snap isn't used on the probes. Always removed, with its snaps first, and pinned so it can't come back (see below) |
 
-## Snap removal (`snap`)
+### Snap removal
 
-Only when `bootstrap_remove_snap` is on, and only if snapd is installed:
+snapd can't simply be purged like the packages above: its snaps have to be removed first, in
+order. This runs as part of the `packages` step, only if snapd is installed:
 
 1. Removes application snaps, then base snaps (`core*`, `bare`), then the `snapd` snap itself.
    Bases go last because apps depend on them.
@@ -95,7 +97,6 @@ In `inventory/group_vars/netprobes/main.yml`. Defaults are in each role's `defau
 | `bootstrap_timezone` | System timezone |
 | `bootstrap_install_packages` | Baseline packages to install |
 | `bootstrap_remove_packages` | Packages to purge |
-| `bootstrap_remove_snap` | Remove snap and keep it out |
 | `speedtest_install` | Install the Speedtest CLI |
 | `speedtest_version` | Speedtest version to install |
 | `speedtest_checksums` | sha256 per architecture for that version |
