@@ -10,3 +10,7 @@
 - name: Tailscale auto-update
   ansible.builtin.import_tasks: tailscale.yml
   tags: [tailscale]
+
+- name: Ubuntu Pro apt news
+  ansible.builtin.import_tasks: ubuntu_pro.yml
+  tags: [ubuntu_pro]

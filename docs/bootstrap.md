@@ -14,7 +14,7 @@ current state first, so running it again on an existing probe only fixes what ha
 | After changing the speedtest version | `ansible-playbook playbooks/bootstrap.yml --tags speedtest` |
 | See what would change | add `--check --diff` to any of the above |
 
-Tags: `timezone`, `packages`, `tailscale`, `speedtest`.
+Tags: `timezone`, `packages`, `tailscale`, `ubuntu_pro`, `speedtest`.
 
 For a completely new probe, `playbooks/site.yml` runs bootstrap, then the Beszel agent, then
 maintenance.
@@ -58,6 +58,15 @@ Then, on every run:
 Turns on Tailscale's auto-update (`tailscale set --auto-update=true`) if it isn't on already.
 Maintenance relies on this: it never upgrades Tailscale through apt, because that would cut the
 Tailscale SSH session. See [maintenance.md](maintenance.md).
+
+## Ubuntu Pro apt news (`ubuntu_pro`)
+
+Turns off "apt news" (`pro config set apt_news=false`) if it's on: the Ubuntu Pro advertising
+shown during `apt upgrade`. The probes aren't attached to Ubuntu Pro and ESM isn't enabled, so
+this changes no updates. 26.04 gets normal security updates until 2031.
+
+`ubuntu-pro-client` itself stays installed: Ubuntu's base packages depend on it, and removing it
+can take other packages with it.
 
 ## Speedtest CLI (`speedtest`)
 

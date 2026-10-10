@@ -2,7 +2,7 @@
 
 | Playbook | What it does |
 |----------|--------------|
-| `playbooks/bootstrap.yml`   | Timezone, baseline packages, removes unwanted packages and snap (pinned so it can't come back), Ookla Speedtest CLI on netprobes |
+| `playbooks/bootstrap.yml`   | Timezone, baseline packages, removes unwanted packages and snap (pinned so it can't come back), turns off Ubuntu Pro apt news, Ookla Speedtest CLI on netprobes |
 | `playbooks/beszel.yml`      | Installs/updates the Beszel agent via the [`community.beszel.agent`](https://github.com/ansible-collections/community.beszel) role |
 | `playbooks/maintenance.yml` | Package holds, apt upgrade + autoremove, journal cleanup, reboot if required (25% of hosts at a time), reports failed units, checks the Beszel agent is running |
 | `playbooks/site.yml`        | bootstrap → beszel → maintenance |
@@ -27,7 +27,7 @@ Netprobes are managed as `root` over Tailscale SSH, so no `-K` is needed. Only r
 
 ```bash
 ansible-playbook playbooks/bootstrap.yml                     # new or rebuilt hosts
-ansible-playbook playbooks/bootstrap.yml --tags packages     # just one part: timezone | packages | tailscale | speedtest
+ansible-playbook playbooks/bootstrap.yml --tags packages     # just one part: timezone | packages | tailscale | ubuntu_pro | speedtest
 
 ansible-playbook playbooks/beszel.yml --ask-vault-pass --check --diff     # dry run
 ansible-playbook playbooks/beszel.yml --ask-vault-pass                    # install / update agents

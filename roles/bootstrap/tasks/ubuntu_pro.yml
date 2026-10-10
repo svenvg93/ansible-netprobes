@@ -1,0 +1,15 @@
+---
+# Probes aren't attached to Ubuntu Pro; this only stops the Pro advertising in apt output.
+- name: Read Ubuntu Pro client settings
+  ansible.builtin.command: pro config show
+  register: bootstrap_pro_config
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Disable apt news
+  ansible.builtin.command: pro config set apt_news=false
+  changed_when: true
+  when:
+    - bootstrap_pro_config.rc == 0
+    - bootstrap_pro_config.stdout is regex('(?m)^apt_news\s+True')
