@@ -1,0 +1,61 @@
+---
+# -e release_upgrade_repair_repos=true -e release_upgrade_from=<old codename>:
+# only restore the third-party repos of a probe that is already upgraded.
+- name: Only repair the repos of an upgraded probe
+  when: release_upgrade_repair_repos | bool
+  block:
+    - name: Check the old release name is given
+      ansible.builtin.assert:
+        that: release_upgrade_from is defined and release_upgrade_from | length > 0
+        fail_msg: "Pass the release the probe was upgraded from, e.g. -e release_upgrade_from=noble."
+        quiet: true
+
+    - name: Restore and re-point third-party repos
+      ansible.builtin.include_tasks: repos.yml
+      vars:
+        release_upgrade_plan:
+          from: "{{ release_upgrade_from }}"
+        release_upgrade_to_codename: "{{ ansible_facts['distribution_release'] }}"
+
+    - name: Refresh the package lists
+      ansible.builtin.apt:
+        update_cache: true
+        lock_timeout: 300
+
+    - name: Done with this host
+      ansible.builtin.meta: end_host
+
+# A run that was interrupted after do-release-upgrade succeeded (upgrade.status "done 0")
+# but before the finish steps (no "finished" marker) resumes at the reboot.
+- name: Read the status of an earlier upgrade
+  ansible.builtin.slurp:
+    src: "{{ release_upgrade_state_dir }}/upgrade.status"
+  register: release_upgrade_prev_status
+  failed_when: false
+
+- name: Check whether that upgrade was finished
+  ansible.builtin.stat:
+    path: "{{ release_upgrade_state_dir }}/finished"
+  register: release_upgrade_finished
+
+- name: Decide whether to resume
+  ansible.builtin.set_fact:
+    release_upgrade_resume: >-
+      {{ (release_upgrade_prev_status.content | default('') | b64decode | trim) == 'done 0'
+         and not release_upgrade_finished.stat.exists }}
+
+- name: Check for and run the upgrade
+  ansible.builtin.include_tasks: upgrade.yml
+  when: not release_upgrade_resume
+
+- name: Report resuming
+  ansible.builtin.debug:
+    msg: "{{ inventory_hostname }}: the upgrade already succeeded; resuming at the reboot."
+  when: release_upgrade_resume
+
+- name: Stop here in check mode when resuming
+  ansible.builtin.meta: end_host
+  when: release_upgrade_resume and ansible_check_mode
+
+- name: Reboot and finish
+  ansible.builtin.include_tasks: finish.yml

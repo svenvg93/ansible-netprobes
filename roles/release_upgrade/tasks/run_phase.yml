@@ -1,0 +1,44 @@
+---
+# Runs one phase of the upgrade script in the background and waits for it.
+# Expects: release_upgrade_phase
+- name: "Clear the previous status ({{ release_upgrade_phase }})"
+  ansible.builtin.file:
+    path: "{{ release_upgrade_state_dir }}/{{ release_upgrade_phase }}.status"
+    state: absent
+
+- name: "Start in the background ({{ release_upgrade_phase }})"
+  ansible.builtin.command: >-
+    systemd-run --collect
+    --unit=ansible-release-upgrade-{{ release_upgrade_phase }}
+    --description="Ansible release upgrade ({{ release_upgrade_phase }})"
+    {{ release_upgrade_script }} {{ release_upgrade_phase }}
+  changed_when: true
+
+# Polled with raw: it needs no Python, which the upgrade replaces mid-run. The connection
+# may drop while tailscaled restarts; ansible_ssh_retries (set in the playbook) reconnects.
+- name: "Wait until it finishes ({{ release_upgrade_phase }})"
+  ansible.builtin.raw: cat {{ release_upgrade_state_dir }}/{{ release_upgrade_phase }}.status
+  register: release_upgrade_status
+  until: release_upgrade_status.stdout | default('') is search('done ')
+  retries: "{{ (release_upgrade_timeout_minutes | int) * 2 }}"
+  delay: 30
+  changed_when: false
+  failed_when: false
+
+- name: "Read the result ({{ release_upgrade_phase }})"
+  ansible.builtin.set_fact:
+    release_upgrade_result: "{{ release_upgrade_status.stdout | default('') | trim }}"
+
+- name: "Show the end of the log on failure ({{ release_upgrade_phase }})"
+  ansible.builtin.raw: tail -n 40 {{ release_upgrade_state_dir }}/{{ release_upgrade_phase }}.log
+  register: release_upgrade_log
+  changed_when: false
+  when: release_upgrade_result != 'done 0'
+
+- name: "Fail if it didn't succeed ({{ release_upgrade_phase }})"
+  ansible.builtin.fail:
+    msg: |-
+      Phase '{{ release_upgrade_phase }}' ended with '{{ release_upgrade_result or 'no status (timed out)' }}'.
+      Full log: {{ release_upgrade_state_dir }}/{{ release_upgrade_phase }}.log
+      {{ release_upgrade_log.stdout | default('') }}
+  when: release_upgrade_result != 'done 0'

@@ -1,0 +1,22 @@
+---
+# Upgrade netprobes to the next Ubuntu LTS release, one at a time.
+#   ansible-playbook playbooks/release-upgrade.yml --limit <probe> --check   # what would happen
+#   ansible-playbook playbooks/release-upgrade.yml --limit <probe>
+- name: Ubuntu release upgrade
+  hosts: netprobes
+  serial: 1
+  max_fail_percentage: 0
+  vars:
+    # Reconnect when tailscaled restarts mid-upgrade instead of marking the host unreachable.
+    ansible_ssh_retries: 10
+    # The upgrade replaces the versioned Python (e.g. python3.12 -> python3.14) that
+    # interpreter discovery would pin; the python3 symlink survives it.
+    ansible_python_interpreter: /usr/bin/python3
+  pre_tasks:
+    - name: Require an explicit --limit
+      ansible.builtin.assert:
+        that: ansible_limit is defined
+        fail_msg: "Release upgrades are never run on the whole fleet by accident: pass --limit <probe>[,<probe>...]."
+        quiet: true
+  roles:
+    - role: release_upgrade

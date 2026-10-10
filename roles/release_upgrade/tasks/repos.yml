@@ -1,0 +1,66 @@
+---
+# The upgrader switches off every non-Ubuntu repo, in one of two ways:
+# - .list files it can't convert to deb822 go to <name>.list.disabled with every line
+#   commented out (the original is kept as <name>.list.migrate);
+# - .sources files get "Enabled: no".
+# Both are undone here, then release-specific suites are moved to the new release.
+
+- name: Find repos the upgrader could not convert
+  ansible.builtin.find:
+    paths: "{{ release_upgrade_sources_dir | default('/etc/apt/sources.list.d') }}"
+    patterns: ["*.list.disabled"]
+  register: release_upgrade_disabled_lists
+
+- name: Read them
+  ansible.builtin.slurp:
+    src: "{{ item.path }}"
+  loop: "{{ release_upgrade_disabled_lists.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: release_upgrade_disabled_content
+
+- name: Restore them as .list files
+  ansible.builtin.copy:
+    dest: "{{ item.source | regex_replace('\\.disabled$', '') }}"
+    content: |
+      # Restored by Ansible after the release upgrade
+      {{ item.content | b64decode | regex_findall('(?m)^# (deb(?:-src)? .+)$') | join('\n') }}
+    mode: "0644"
+  loop: "{{ release_upgrade_disabled_content.results }}"
+  loop_control:
+    label: "{{ item.source }}"
+  when: item.content | b64decode is search('(?m)^# deb(-src)? ')
+
+- name: Remove the upgrader's leftovers of restored repos
+  ansible.builtin.file:
+    path: "{{ item.0.source | regex_replace('\\.disabled$', item.1) }}"
+    state: absent
+  loop: "{{ release_upgrade_disabled_content.results | product(['.disabled', '.migrate']) | list }}"
+  loop_control:
+    label: "{{ item.0.source | regex_replace('\\.disabled$', item.1) }}"
+  when: item.0.content | b64decode is search('(?m)^# deb(-src)? ')
+
+- name: Find third-party repo files
+  ansible.builtin.find:
+    paths: "{{ release_upgrade_sources_dir | default('/etc/apt/sources.list.d') }}"
+    patterns: ["*.sources", "*.list"]
+    excludes: ["ubuntu.sources"]
+  register: release_upgrade_repo_files
+
+- name: Re-enable repos the upgrader turned off
+  ansible.builtin.replace:
+    path: "{{ item.path }}"
+    regexp: '^Enabled: no\n'
+    replace: ''
+  loop: "{{ release_upgrade_repo_files.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Point repos at the new release
+  ansible.builtin.replace:
+    path: "{{ item.path }}"
+    regexp: '^((?:Suites:|deb |deb-src ).*[ \t]){{ release_upgrade_plan.from }}\b'
+    replace: '\g<1>{{ release_upgrade_to_codename }}'
+  loop: "{{ release_upgrade_repo_files.files }}"
+  loop_control:
+    label: "{{ item.path }}"

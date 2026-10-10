@@ -5,12 +5,16 @@ User-facing docs are in `README.md`; this file covers what an agent needs on top
 
 ## What this is
 
-Ansible for a fleet of 16 Ubuntu 24.04 "netprobes" (`netprobe01`–`netprobe16`) that run
-internet measurements. This repo handles:
+Ansible for a fleet of 16 Ubuntu 26.04 "netprobes" (`netprobe01`–`netprobe16`) that run
+internet measurements. Probes that were offline during the 2026-10-10 upgrade (04, 09, 10, 12, 15)
+are still on 24.04. This repo handles:
 
 - **bootstrap** – timezone, package cleanup, snap removal, Tailscale auto-update, Ookla Speedtest CLI
 - **beszel** – Beszel monitoring agent via the `community.beszel.agent` collection role
 - **maintenance** – apt upgrades, journal cleanup, reboots, health checks
+- **release-upgrade** – `do-release-upgrade` to the next LTS, one probe at a time. Never run it
+  for real yourself, and never add it to `site.yml`. It refuses to run without `--limit`; only
+  `--check` dry runs are fine.
 
 Telegraf and Grafana Alloy (which run the actual measurements) are out of scope for this repo.
 Ignore `../ansible`: don't read it, copy from it or change it.
@@ -22,11 +26,15 @@ Ignore `../ansible`: don't read it, copy from it or change it.
   Its sudo needs a password, so runs that include it need `-K`, which you can't type. Use `--limit netprobes`.
 - **Netprobes** are reached over **Tailscale SSH** as `root` (`ansible_become: false`), with the
   address `<name>.tail294b9a.ts.net`. No password and no `-K`.
-- Several probes are offline in Tailscale (as of 2026-10-08: 04, 09–12, 15, 16). `UNREACHABLE` for
-  those is normal. 10, 12 and 15 have been offline for months; ask before removing them from the inventory.
+- Several probes are offline in Tailscale (as of 2026-10-10: 04, 09, 10, 12, 15). `UNREACHABLE` for
+  those is normal. They're unused for now, not retired: keep them in the inventory and the numbering.
 - The **Beszel hub** runs in Docker from `~/docker/beszel` (hub + Tailscale sidecar, TS hostname `beszel`).
   Agents connect out to `https://beszel.tail294b9a.ts.net` over WebSocket with a universal token.
 - All reachable probes are x86_64 with a single NVMe drive (`/dev/nvme0`).
+- They run Ubuntu's standard 7.0 kernel (`linux-generic` on 26.04). It is the distro kernel, not a
+  custom one; don't switch it.
+- Only netprobe11 has `beszel-agent` installed. netprobe11 also has no Grafana repo and no `alloy`,
+  unlike the rest of the fleet.
 
 ## How to verify changes
 
@@ -87,8 +95,10 @@ ansible-playbook playbooks/<play>.yml --limit netprobe01 --check --diff   # dry 
 - `community.beszel` installs the agent to `/usr/local/bin`. Some probes still have
   `/opt/beszel-agent` left over from the official install script.
 
-## Open items (as of 2026-10-08)
+## Open items (as of 2026-10-10)
 
+- Release upgrade to 26.04: done for all reachable probes. 04, 09, 10, 12 and 15 still need it
+  once they're back online (the user runs it, not you).
 - GitHub Actions workflow for lint/syntax checks: requested, not started.
 - Push to GitHub is blocked until the user re-runs `gh auth login` (the stored token is invalid).
 - Discussed but not decided: scheduled maintenance (systemd timer on `cpe-srv`), `log_path` in

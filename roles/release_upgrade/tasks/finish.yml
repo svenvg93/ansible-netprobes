@@ -1,0 +1,84 @@
+---
+# Runs after a successful do-release-upgrade, directly or when resuming an interrupted run.
+- name: Read the saved plan
+  ansible.builtin.slurp:
+    src: "{{ release_upgrade_state_dir }}/plan.json"
+  register: release_upgrade_plan_file
+  failed_when: false
+
+# Runs started before the plan file existed can pass -e release_upgrade_from=<old codename>.
+- name: Load the plan
+  ansible.builtin.set_fact:
+    release_upgrade_plan: >-
+      {{ (release_upgrade_plan_file.content | b64decode | from_json)
+         if release_upgrade_plan_file.content is defined
+         else {'from': release_upgrade_from | default(''), 'to_version': ''} }}
+
+- name: Check the old release name is known
+  ansible.builtin.assert:
+    that: release_upgrade_plan.from | length > 0
+    fail_msg: >-
+      No plan.json in {{ release_upgrade_state_dir }}. Pass the release you upgraded from,
+      e.g. -e release_upgrade_from=noble.
+    quiet: true
+
+- name: Reboot into the new release
+  ansible.builtin.reboot:
+    reboot_timeout: "{{ release_upgrade_reboot_timeout }}"
+    msg: Rebooting into the new release (Ansible)
+
+- name: Refresh facts
+  ansible.builtin.setup:
+    gather_subset: [min]
+
+- name: Check the new release is running
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution_release'] != release_upgrade_plan.from
+      - release_upgrade_plan.to_version == '' or
+        release_upgrade_plan.to_version is match(ansible_facts['distribution_version'] | regex_escape)
+    fail_msg: >-
+      {{ inventory_hostname }} runs {{ ansible_facts['distribution_version'] }}
+      ({{ ansible_facts['distribution_release'] }}), not the new release.
+      See {{ release_upgrade_state_dir }}/upgrade.log.
+    quiet: true
+
+- name: Turn third-party repos back on
+  when: release_upgrade_reenable_repos | bool
+  block:
+    - name: Restore and re-point third-party repos
+      ansible.builtin.include_tasks: repos.yml
+      vars:
+        release_upgrade_to_codename: "{{ ansible_facts['distribution_release'] }}"
+
+    - name: Refresh the package lists
+      ansible.builtin.apt:
+        update_cache: true
+        lock_timeout: 300
+
+- name: Gather service state
+  ansible.builtin.service_facts:
+
+- name: Check key services are running
+  ansible.builtin.assert:
+    that: ansible_facts['services'][item]['state'] == 'running'
+    fail_msg: "{{ item }} is not running after the upgrade."
+    quiet: true
+  loop: "{{ release_upgrade_check_services }}"
+  when:
+    - item in ansible_facts['services']
+    - ansible_facts['services'][item]['status'] != 'not-found'
+
+- name: Mark the upgrade as finished
+  ansible.builtin.copy:
+    dest: "{{ release_upgrade_state_dir }}/finished"
+    content: "{{ ansible_facts['distribution_version'] }} ({{ ansible_facts['distribution_release'] }})\n"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Report the result
+  ansible.builtin.debug:
+    msg: >-
+      {{ inventory_hostname }} now runs {{ ansible_facts['distribution_version'] }}
+      ({{ ansible_facts['distribution_release'] }}). Logs: {{ release_upgrade_state_dir }}.

@@ -1,0 +1,24 @@
+---
+# Only upgrade to LTS releases (written to /etc/update-manager/release-upgrades).
+release_upgrade_prompt: lts
+# Free space needed on / before starting.
+release_upgrade_min_free_gb: 5
+# How long each background phase may take before the run gives up waiting.
+release_upgrade_timeout_minutes: 120
+release_upgrade_reboot_timeout: 1200
+
+release_upgrade_script: /usr/local/sbin/ansible-release-upgrade
+release_upgrade_state_dir: /var/lib/ansible-release-upgrade
+
+# The upgrader turns off every non-Ubuntu repo. Turn them back on afterwards and point
+# them at the new release (all repos the probes use publish suites for new releases).
+release_upgrade_reenable_repos: true
+release_upgrade_sources_dir: /etc/apt/sources.list.d
+# Set with -e to only restore the repos of an already upgraded probe (see main.yml).
+release_upgrade_repair_repos: false
+
+# Services that must be running after the upgrade (checked only if installed).
+release_upgrade_check_services:
+  - tailscaled.service
+  - beszel-agent.service
+  - telegraf.service

@@ -6,9 +6,10 @@
 | `playbooks/beszel.yml`      | Installs/updates the Beszel agent via the [`community.beszel.agent`](https://github.com/ansible-collections/community.beszel) role |
 | `playbooks/maintenance.yml` | Package holds, apt upgrade + autoremove, journal cleanup, reboot if required (25% of hosts at a time), reports failed units, checks the Beszel agent is running |
 | `playbooks/site.yml`        | bootstrap → beszel → maintenance |
+| `playbooks/release-upgrade.yml` | Upgrade to the next Ubuntu LTS (`do-release-upgrade`), one probe at a time; needs `--limit` |
 
 How each part works in detail: [docs/bootstrap.md](docs/bootstrap.md), [docs/beszel.md](docs/beszel.md),
-[docs/maintenance.md](docs/maintenance.md).
+[docs/maintenance.md](docs/maintenance.md), [docs/release-upgrade.md](docs/release-upgrade.md).
 
 ## Setup
 

@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  role_name: release_upgrade
+  author: cpe
+  license: MIT
+  description: Upgrade Ubuntu to the next release with do-release-upgrade, safely over Tailscale SSH
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: [all]
+dependencies: []
