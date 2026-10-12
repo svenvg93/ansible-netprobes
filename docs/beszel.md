@@ -81,9 +81,37 @@ ansible-vault encrypt inventory/group_vars/netprobes/vault.yml
 
 `vault.yml` is git-ignored. Every `beszel.yml` run then needs `--ask-vault-pass`.
 
+## The hub
+
+`playbooks/beszel-hub.yml` installs the hub on the controller (cpe-srv) with the
+`community.beszel.hub` role. It's a bare-metal install, no Docker:
+
+- downloads the latest hub release from GitHub to `/usr/local/bin/beszel`;
+- creates a `beszel` system user and the data directory `/var/lib/beszel` (database, settings);
+- writes and starts `/etc/systemd/system/beszel-hub.service`;
+- then this repo checks that the hub answers on `/api/health`.
+
+It runs as `cpe` with sudo, so it needs `-K`:
+
+| Situation | Command |
+|---|---|
+| Install or upgrade the hub | `ansible-playbook playbooks/beszel-hub.yml -K` |
+| Remove the hub | `ansible-playbook playbooks/beszel-hub.yml -K -e hub_state=absent` |
+
+The hub only listens on `127.0.0.1:8090` (`hub_bind_address`, `hub_port` in
+`inventory/group_vars/controller/main.yml`). The tailnet reaches it through the Tailscale Service
+`svc:beszel` on cpe-srv, which serves `https://beszel.tail294b9a.ts.net` and proxies to that port.
+That's set up in Tailscale, not by this playbook; check it with `tailscale serve status`.
+
+After a fresh install, open the hub URL to create the admin account, then copy the universal
+token (Settings) into `vault.yml` and the public key (**Add System**) into `agent_public_key`.
+
+A dry run (`--check`) on a controller without the hub stops at the role's "start service" task,
+same as for the agent.
+
 ## Upgrading
 
-- **Agents:** upgrade the hub first, then run `beszel.yml`. Agents always get the latest release,
+- **Agents:** upgrade the hub first (`beszel-hub.yml -K`), then run `beszel.yml`. Agents always get the latest release,
   and an agent newer than the hub may not work with it.
 - **The collection:**
   ```bash

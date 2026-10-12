@@ -1,0 +1,6 @@
+---
+# ---- Beszel hub (community.beszel.hub) ----
+# Localhost only: the tailnet reaches it through the Tailscale Service svc:beszel on this host
+# (https://beszel.tail294b9a.ts.net -> http://127.0.0.1:8090, see `tailscale serve status`).
+hub_bind_address: 127.0.0.1
+hub_port: 8090

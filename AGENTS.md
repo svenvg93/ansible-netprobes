@@ -10,7 +10,8 @@ internet measurements. Probes that were offline during the 2026-10-10 upgrade (0
 are still on 24.04. This repo handles:
 
 - **bootstrap** – timezone, package cleanup, snap removal, Tailscale auto-update, Ookla Speedtest CLI
-- **beszel** – Beszel monitoring agent via the `community.beszel.agent` collection role
+- **beszel** – Beszel monitoring agent via the `community.beszel.agent` collection role, and the hub
+  on the controller via `community.beszel.hub` (`beszel-hub.yml`)
 - **maintenance** – apt upgrades, journal cleanup, reboots, health checks
 - **reboot** – on-demand reboot of netprobes in batches, with health checks afterwards. Never the
   controller; never add it to `site.yml`. Only `--check` runs without the user's OK.
@@ -24,13 +25,15 @@ Ignore `../ansible`: don't read it, copy from it or change it.
 ## Environment facts
 
 - **Controller** is `cpe-srv` (this machine), in the `controller` group with `ansible_connection: local`.
-  It only gets maintenance and is never rebooted by Ansible (the role skips reboots for local hosts).
+  It only gets the Beszel hub and maintenance, and is never rebooted by Ansible (the role skips reboots for local hosts).
   Its sudo needs a password, so runs that include it need `-K`, which you can't type. Use `--limit netprobes`.
 - **Netprobes** are reached over **Tailscale SSH** as `root` (`ansible_become: false`), with the
   address `<name>.tail294b9a.ts.net`. No password and no `-K`.
 - Several probes are offline in Tailscale (as of 2026-10-10: 04, 09, 10, 12, 15). `UNREACHABLE` for
   those is normal. They're unused for now, not retired: keep them in the inventory and the numbering.
-- The **Beszel hub** runs in Docker from `~/docker/beszel` (hub + Tailscale sidecar, TS hostname `beszel`).
+- The **Beszel hub** runs bare metal on the controller via `community.beszel.hub` (`playbooks/beszel-hub.yml`,
+  needs `-K`, so the user runs it), on `127.0.0.1:8090`. The Tailscale Service `svc:beszel` on cpe-srv
+  publishes it as `https://beszel.tail294b9a.ts.net`. Don't run the hub in Docker.
   Agents connect out to `https://beszel.tail294b9a.ts.net` over WebSocket with a universal token.
 - All reachable probes are x86_64 with a single NVMe drive (`/dev/nvme0`).
 - They run Ubuntu's standard 7.0 kernel (`linux-generic` on 26.04). It is the distro kernel, not a
@@ -59,7 +62,8 @@ ansible-playbook playbooks/<play>.yml --limit netprobe01 --check --diff   # dry 
 - **Never do a real (non-check) run against probes without the user's explicit OK.** These are
   production measurement hosts.
 - Known check-mode limits (not bugs): `beszel.yml` stops at the collection's "start service" task on
-  probes without the agent. The speedtest role reports "Would install" instead of downloading.
+  probes without the agent (`beszel-hub.yml` likewise on a controller without the hub; dry-run it
+  without `-K` via `-e ansible_become=false --check`). The speedtest role reports "Would install" instead of downloading.
   Use `--start-at-task` to dry-run tasks after a failing one.
 
 ## Conventions

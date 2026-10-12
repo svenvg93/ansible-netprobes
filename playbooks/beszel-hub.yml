@@ -1,0 +1,20 @@
+---
+# Install / update the Beszel hub on the controller (cpe-srv). Needs -K for sudo.
+#   ansible-playbook playbooks/beszel-hub.yml -K
+#   ansible-playbook playbooks/beszel-hub.yml -K -e hub_state=absent   # uninstall (keeps the data dir)
+- name: Beszel hub
+  hosts: controller
+  roles:
+    - role: community.beszel.hub
+
+  post_tasks:
+    - name: Check the hub answers
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ hub_port | default(8090) }}/api/health"
+      register: beszel_hub_health
+      retries: 10
+      delay: 3
+      until: beszel_hub_health is succeeded
+      when:
+        - hub_state | default('present') == 'present'
+        - not ansible_check_mode

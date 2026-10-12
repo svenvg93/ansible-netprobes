@@ -4,6 +4,7 @@
 |----------|--------------|
 | `playbooks/bootstrap.yml`   | Timezone, baseline packages, removes unwanted packages and snap (pinned so it can't come back), turns off Ubuntu Pro apt news, Ookla Speedtest CLI on netprobes |
 | `playbooks/beszel.yml`      | Installs/updates the Beszel agent via the [`community.beszel.agent`](https://github.com/ansible-collections/community.beszel) role |
+| `playbooks/beszel-hub.yml`  | Installs/updates the Beszel hub on the controller (bare metal, `community.beszel.hub` role); needs `-K` |
 | `playbooks/maintenance.yml` | Package holds, apt upgrade + autoremove, journal cleanup, reboot if required (25% of hosts at a time), checks the Beszel agent is running |
 | `playbooks/site.yml`        | bootstrap → beszel → maintenance |
 | `playbooks/release-upgrade.yml` | Upgrade to the next Ubuntu LTS (`do-release-upgrade`), one probe at a time; needs `--limit` |
@@ -59,6 +60,8 @@ To refresh: `ansible netprobes -o -m raw -a 'lscpu | grep "Model name"; ip -br l
 ansible-playbook playbooks/bootstrap.yml                     # new or rebuilt hosts
 ansible-playbook playbooks/bootstrap.yml --tags packages     # just one part: timezone | packages | tailscale | ubuntu_pro | speedtest
 
+ansible-playbook playbooks/beszel-hub.yml -K                              # hub on cpe-srv (install / update)
+
 ansible-playbook playbooks/beszel.yml --ask-vault-pass --check --diff     # dry run
 ansible-playbook playbooks/beszel.yml --ask-vault-pass                    # install / update agents
 ansible-playbook playbooks/beszel.yml --ask-vault-pass --limit netprobe01 # one host
@@ -77,8 +80,9 @@ Agents register themselves with the hub (`agent_hub_url` + universal token in `v
 
 ## Upgrading Beszel
 
-Agents install the latest release. Bump the hub image tag in `~/docker/beszel/docker-compose.yml`
-first, then run `ansible-playbook playbooks/beszel.yml` to bring the agents up to date.
+Hub and agents both install the latest release. Upgrade the hub first
+(`ansible-playbook playbooks/beszel-hub.yml -K`), then run `ansible-playbook playbooks/beszel.yml`
+to bring the agents up to date.
 
 ## Updating the collections
 
@@ -101,6 +105,9 @@ For a major version, read the collection's changelog first, then change the rang
 - The agent is installed to `/usr/local/bin/beszel-agent`. Hosts previously set up with the
   official install script also have `/opt/beszel-agent`; the service file gets replaced, so the
   old directory is just leftover and can be removed.
+- **Hub**: runs bare metal on the controller (`/usr/local/bin/beszel`, data in `/var/lib/beszel`,
+  unit `beszel-hub`), listening on `127.0.0.1:8090` only. The Tailscale Service `svc:beszel` on
+  cpe-srv publishes it as `https://beszel.tail294b9a.ts.net` (`tailscale serve status`).
 - Agents connect out to the hub at `https://beszel.tail294b9a.ts.net` (port 443), so your tailnet
   ACL must allow the netprobes to reach the hub's node.
 - **Speedtest**: installed from Ookla's release tarball (pinned version + sha256 in
@@ -117,6 +124,6 @@ For a major version, read the collection's changelog first, then change the rang
 - **Maintenance fails a host** if `beszel-agent` is installed but not running afterwards
   (`maintenance_verify_beszel: false` to turn that off).
 - Bootstrap settings (timezone, packages to remove) live in `inventory/group_vars/netprobes/main.yml`.
-- **Controller** (`cpe-srv`, the machine Ansible runs on) only gets maintenance, in a separate play
-  after the netprobes. It is never rebooted by Ansible; when the report says `reboot_required`,
-  reboot it by hand. Use `--limit netprobes` to skip it. A Docker upgrade there restarts the Beszel hub.
+- **Controller** (`cpe-srv`, the machine Ansible runs on) gets the Beszel hub (`beszel-hub.yml`) and
+  maintenance, in a separate play after the netprobes. It is never rebooted by Ansible; when the report says `reboot_required`,
+  reboot it by hand. Use `--limit netprobes` to skip it.
