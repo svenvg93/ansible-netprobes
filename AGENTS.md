@@ -49,8 +49,8 @@ ansible-playbook playbooks/<play>.yml --limit netprobe01 --check --diff   # dry 
 - Use the full path `~/.local/bin/ansible-lint`. `/usr/bin/ansible-lint` is an old, broken apt version.
 - Fix lint findings rather than silencing them. Don't add an `.ansible-lint` config that skips rules
   or lowers the profile. A `# noqa: <rule>` is only OK when no module can do the job, and it needs a
-  comment above it saying why. The one existing case: `systemctl list-units --state=failed` in
-  `roles/maintenance/tasks/main.yml`, because `service_facts` misses failed timers and mounts.
+  comment above it saying why. There are none right now.
+- Don't add failed-systemd-unit checks/reports to playbooks; the user removed them on purpose.
 - Redirect stdin (`</dev/null`) for every `ansible`/`ansible-playbook` call from a non-interactive
   shell, or Ansible fails with "requires blocking IO on stdin/stdout/stderr".
 - Ad-hoc read-only checks against probes are fine, e.g. `ansible netprobes -o -m command -a '...' </dev/null`.

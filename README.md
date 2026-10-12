@@ -4,7 +4,7 @@
 |----------|--------------|
 | `playbooks/bootstrap.yml`   | Timezone, baseline packages, removes unwanted packages and snap (pinned so it can't come back), turns off Ubuntu Pro apt news, Ookla Speedtest CLI on netprobes |
 | `playbooks/beszel.yml`      | Installs/updates the Beszel agent via the [`community.beszel.agent`](https://github.com/ansible-collections/community.beszel) role |
-| `playbooks/maintenance.yml` | Package holds, apt upgrade + autoremove, journal cleanup, reboot if required (25% of hosts at a time), reports failed units, checks the Beszel agent is running |
+| `playbooks/maintenance.yml` | Package holds, apt upgrade + autoremove, journal cleanup, reboot if required (25% of hosts at a time), checks the Beszel agent is running |
 | `playbooks/site.yml`        | bootstrap → beszel → maintenance |
 | `playbooks/release-upgrade.yml` | Upgrade to the next Ubuntu LTS (`do-release-upgrade`), one probe at a time; needs `--limit` |
 

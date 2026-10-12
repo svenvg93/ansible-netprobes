@@ -46,8 +46,8 @@ machine it runs on, so the role always skips the reboot there. When the report s
 3. **Vacuum the journal:** delete systemd journal logs older than `maintenance_journal_max_age`.
 4. **Reboot** if Ubuntu flagged that one is needed (`/var/run/reboot-required`) and
    `maintenance_reboot_if_required` is on. Ansible waits up to 10 minutes for the host to come back.
-5. **Report** per host: whether packages changed, whether a reboot was needed or done, and any
-   failed systemd units. Pending reboots and failed units are also shown as warnings.
+5. **Report** per host: whether packages changed and whether a reboot was needed or done.
+   Pending reboots are also shown as a warning.
 6. **Check the Beszel agent:** fail the host if the agent is installed but not running.
 
 ## Why Tailscale is held during the upgrade
