@@ -7,9 +7,11 @@
 | `playbooks/maintenance.yml` | Package holds, apt upgrade + autoremove, journal cleanup, reboot if required (25% of hosts at a time), checks the Beszel agent is running |
 | `playbooks/site.yml`        | bootstrap → beszel → maintenance |
 | `playbooks/release-upgrade.yml` | Upgrade to the next Ubuntu LTS (`do-release-upgrade`), one probe at a time; needs `--limit` |
+| `playbooks/reboot.yml`      | Reboots netprobes on demand (25% at a time, or only where required), then checks the Beszel agent is running |
 
 How each part works in detail: [docs/bootstrap.md](docs/bootstrap.md), [docs/beszel.md](docs/beszel.md),
-[docs/maintenance.md](docs/maintenance.md), [docs/release-upgrade.md](docs/release-upgrade.md).
+[docs/maintenance.md](docs/maintenance.md), [docs/release-upgrade.md](docs/release-upgrade.md),
+[docs/reboot.md](docs/reboot.md).
 
 ## Setup
 
@@ -65,6 +67,10 @@ ansible-playbook playbooks/beszel.yml --ask-vault-pass -e agent_state=absent   #
 ansible-playbook playbooks/maintenance.yml
 ansible-playbook playbooks/maintenance.yml -e maintenance_reboot_if_required=false   # never reboot
 ansible-playbook playbooks/maintenance.yml -e maintenance_serial=1                   # one host at a time
+
+ansible-playbook playbooks/reboot.yml --limit netprobe01                    # reboot one probe
+ansible-playbook playbooks/reboot.yml                                       # all probes, 25% at a time
+ansible-playbook playbooks/reboot.yml -e reboot_only_if_required=true       # only where Ubuntu asks for it
 ```
 
 Agents register themselves with the hub (`agent_hub_url` + universal token in `vault.yml`), so there is no need to add systems by hand.

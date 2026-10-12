@@ -12,6 +12,8 @@ are still on 24.04. This repo handles:
 - **bootstrap** – timezone, package cleanup, snap removal, Tailscale auto-update, Ookla Speedtest CLI
 - **beszel** – Beszel monitoring agent via the `community.beszel.agent` collection role
 - **maintenance** – apt upgrades, journal cleanup, reboots, health checks
+- **reboot** – on-demand reboot of netprobes in batches, with health checks afterwards. Never the
+  controller; never add it to `site.yml`. Only `--check` runs without the user's OK.
 - **release-upgrade** – `do-release-upgrade` to the next LTS, one probe at a time. Never run it
   for real yourself, and never add it to `site.yml`. It refuses to run without `--limit`; only
   `--check` dry runs are fine.
