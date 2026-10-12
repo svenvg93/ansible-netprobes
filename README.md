@@ -17,11 +17,39 @@ How each part works in detail: [docs/bootstrap.md](docs/bootstrap.md), [docs/bes
 ansible-galaxy collection install -r requirements.yml
 ```
 
-1. Netprobes are listed in `inventory/hosts.yml` as `netprobe[01:16]`; adjust the range when probes are added or retired.
+1. Netprobes are listed in `inventory/hosts.yml` as `netprobe[01:17]`; adjust the range when probes are added or retired.
 2. In the Beszel hub, click **Add System** and copy the public key into `agent_public_key` in `inventory/group_vars/netprobes/main.yml`.
 3. Test connectivity: `ansible netprobes -m ping`
 
 Netprobes are managed as `root` over Tailscale SSH, so no `-K` is needed. Only runs that include the controller (`cpe-srv`, as `cpe`) need `-K` for its sudo password.
+
+## Probes
+
+All probes run Ubuntu 26.04 with a single NVMe drive. Numbered by hardware: the i3 boxes first
+(01–05), then the N200 boxes (06–17).
+
+| Probe | CPU | RAM | Disk | Network interfaces |
+|-------|-----|-----|------|--------------------|
+| netprobe01 | Core i3-10100 (4C/8T) | 16 GB DDR4 | 250 GB Samsung 970 EVO Plus | `eno1` 1G (e1000e), `enp1s0f0` + `enp1s0f1` 10G (ixgbe) |
+| netprobe02 | Core i3-10100 (4C/8T) | 16 GB DDR4 | 250 GB Samsung 980 | `eno1` 1G (e1000e), `enp1s0f0` + `enp1s0f1` 10G (ixgbe) |
+| netprobe03 | Core i3-10100 (4C/8T) | 16 GB DDR4 | 250 GB Samsung 980 | `eno1` 1G (e1000e), `enp1s0f0` + `enp1s0f1` 10G (ixgbe) |
+| netprobe04 | Core i3-10100 (4C/8T) | 16 GB DDR4 | 250 GB Samsung 980 | `eno1` 1G (e1000e), `enp1s0f0` + `enp1s0f1` 10G (ixgbe) |
+| netprobe05 | Core i3-10100 (4C/8T) | 16 GB DDR4 | 250 GB Samsung 980 | `eno1` 1G (e1000e), `enp1s0f0` + `enp1s0f1` 10G (ixgbe) |
+| netprobe06 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169) |
+| netprobe07 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169) |
+| netprobe08 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169), `wlo1` Wi-Fi (iwlwifi, unused) |
+| netprobe09 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169) |
+| netprobe10 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169) |
+| netprobe11 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169) |
+| netprobe12 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169) |
+| netprobe13 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169), `wlo1` Wi-Fi (iwlwifi, unused) |
+| netprobe14 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169) |
+| netprobe15 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169) |
+| netprobe16 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169) |
+| netprobe17 | N200 (4C/4T) | 8 GB DDR4 | 250 GB Samsung 980 | `enp1s0` 2.5G (r8169) |
+
+Interface speeds are the NIC's maximum, not the negotiated link speed.
+To refresh: `ansible netprobes -o -m raw -a 'lscpu | grep "Model name"; ip -br link' </dev/null`.
 
 ## Usage
 
