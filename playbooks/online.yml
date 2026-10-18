@@ -21,11 +21,16 @@
     # If tailscale status doesn't work, treat the probe as online (the old behaviour).
     - name: Group probes by Tailscale state
       ansible.builtin.group_by:
-        key: "{{ 'netprobes_online' if online_tailscale_status.rc != 0 or (ansible_host ~ '.') in online_peers else 'netprobes_offline' }}"
+        key: "{{ 'netprobes_online' if online_tailscale_status.rc != 0 or ansible_host in online_names else 'netprobes_offline' }}"
       vars:
+        # ansible_host may be the MagicDNS name, the short host name or a Tailscale IP.
         online_peers: >-
           {{ ((online_tailscale_status.stdout | from_json)['Peer'] | default({}, true)).values()
-             | selectattr('Online') | map(attribute='DNSName') | list }}
+             | selectattr('Online') | list }}
+        online_names: >-
+          {{ (online_peers | map(attribute='DNSName') | map('regex_replace', '[.]$', '') | list)
+             + (online_peers | map(attribute='HostName') | list)
+             + (online_peers | map(attribute='TailscaleIPs') | flatten) }}
       changed_when: false
 
     - name: Report probes that are skipped
