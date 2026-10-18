@@ -2,8 +2,11 @@
 # Baseline setup for new or rebuilt netprobes.
 #   ansible-playbook playbooks/bootstrap.yml
 #   ansible-playbook playbooks/bootstrap.yml --tags timezone|packages|tailscale|speedtest
+- name: Find online netprobes
+  ansible.builtin.import_playbook: online.yml
+
 - name: Bootstrap
-  hosts: netprobes
+  hosts: netprobes_online
   roles:
     - role: bootstrap
     - role: speedtest

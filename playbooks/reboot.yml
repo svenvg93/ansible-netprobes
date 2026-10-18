@@ -4,8 +4,11 @@
 #   ansible-playbook playbooks/reboot.yml                                  # whole fleet, 25% at a time
 #   ansible-playbook playbooks/reboot.yml -e reboot_only_if_required=true  # only where Ubuntu asks for it
 #   ansible-playbook playbooks/reboot.yml -e reboot_serial=1               # one probe at a time
+- name: Find online netprobes
+  ansible.builtin.import_playbook: online.yml
+
 - name: Reboot netprobes
-  hosts: netprobes
+  hosts: netprobes_online
   serial: "{{ reboot_serial | default('25%') }}"
   # A probe that doesn't come back needs hands-on access; stop before rebooting the next batch.
   max_fail_percentage: 0

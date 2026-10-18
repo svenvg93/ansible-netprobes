@@ -29,8 +29,12 @@ Ignore `../ansible`: don't read it, copy from it or change it.
   Its sudo needs a password, so runs that include it need `-K`, which you can't type. Use `--limit netprobes`.
 - **Netprobes** are reached over **Tailscale SSH** as `root` (`ansible_become: false`), with the
   address `<name>.tail294b9a.ts.net`. No password and no `-K`.
-- Several probes are offline in Tailscale (as of 2026-10-10: 04, 09, 10, 12, 15). `UNREACHABLE` for
-  those is normal. They're unused for now, not retired: keep them in the inventory and the numbering.
+- Several probes are offline in Tailscale (as of 2026-10-10: 04, 09, 10, 12, 15). They're unused for
+  now, not retired: keep them in the inventory and the numbering. The netprobe playbooks first import
+  `playbooks/online.yml`, which groups probes by the controller's `tailscale status` into
+  `netprobes_online`/`netprobes_offline`; plays target `netprobes_online`, so offline probes are
+  skipped with a note. New netprobe playbooks must do the same. Ad-hoc `ansible netprobes ...` still
+  shows `UNREACHABLE` for them, which is normal.
 - The **Beszel hub** runs bare metal on the controller via `community.beszel.hub` (`playbooks/beszel-hub.yml`,
   needs `-K`, so the user runs it), on `127.0.0.1:8090`. The Tailscale Service `svc:beszel` on cpe-srv
   publishes it as `https://beszel.tail294b9a.ts.net`. Don't run the hub in Docker.

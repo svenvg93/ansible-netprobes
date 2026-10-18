@@ -2,8 +2,11 @@
 # Upgrade netprobes to the next Ubuntu LTS release, one at a time.
 #   ansible-playbook playbooks/release-upgrade.yml --limit <probe> --check   # what would happen
 #   ansible-playbook playbooks/release-upgrade.yml --limit <probe>
+- name: Find online netprobes
+  ansible.builtin.import_playbook: online.yml
+
 - name: Ubuntu release upgrade
-  hosts: netprobes
+  hosts: netprobes_online
   serial: 1
   max_fail_percentage: 0
   vars:

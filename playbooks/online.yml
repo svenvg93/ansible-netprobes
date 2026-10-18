@@ -1,0 +1,39 @@
+---
+# Imported first by the netprobe playbooks. Sorts probes into netprobes_online / netprobes_offline
+# using the controller's Tailscale peer list, so plays can target only the online ones: probes that
+# are offline for a while get skipped with a note instead of UNREACHABLE errors (and don't trip
+# max_fail_percentage in reboot/release-upgrade). A probe that is online in Tailscale but still
+# can't be reached over SSH is a real problem and keeps failing as usual.
+- name: Find netprobes that are online in Tailscale
+  hosts: netprobes
+  gather_facts: false
+  tasks:
+    # Runs on the controller, once per probe (cheap, and avoids run_once).
+    - name: Get the Tailscale peer list
+      ansible.builtin.command: tailscale status --json
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      register: online_tailscale_status
+
+    # If tailscale status doesn't work, treat the probe as online (the old behaviour).
+    - name: Group probes by Tailscale state
+      ansible.builtin.group_by:
+        key: "{{ 'netprobes_online' if online_tailscale_status.rc != 0 or (ansible_host ~ '.') in online_peers else 'netprobes_offline' }}"
+      vars:
+        online_peers: >-
+          {{ ((online_tailscale_status.stdout | from_json)['Peer'] | default({}, true)).values()
+             | selectattr('Online') | map(attribute='DNSName') | list }}
+      changed_when: false
+
+    - name: Report probes that are skipped
+      ansible.builtin.debug:
+        msg: Offline in Tailscale, skipped
+      when: "'netprobes_offline' in group_names"
+
+    - name: Warn when Tailscale status is unavailable
+      ansible.builtin.debug:
+        msg: "tailscale status failed on the controller ({{ online_tailscale_status.stderr }}); not skipping this probe."
+      when: online_tailscale_status.rc != 0

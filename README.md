@@ -9,6 +9,7 @@
 | `playbooks/site.yml`        | bootstrap → beszel → maintenance |
 | `playbooks/release-upgrade.yml` | Upgrade to the next Ubuntu LTS (`do-release-upgrade`), one probe at a time; needs `--limit` |
 | `playbooks/reboot.yml`      | Reboots netprobes on demand (25% at a time, or only where required), then checks the Beszel agent is running |
+| `playbooks/online.yml`      | Imported by the netprobe playbooks: skips probes that are offline in Tailscale |
 
 How each part works in detail: [docs/bootstrap.md](docs/bootstrap.md), [docs/beszel.md](docs/beszel.md),
 [docs/maintenance.md](docs/maintenance.md), [docs/release-upgrade.md](docs/release-upgrade.md),
@@ -100,6 +101,14 @@ To require a release with a feature you need, raise the lower bound (e.g. `">=2.
 For a major version, read the collection's changelog first, then change the range.
 
 ## Notes
+
+- **Offline probes are skipped.** Every netprobe playbook starts with `online.yml`, which reads
+  `tailscale status` on the controller and only runs the rest on probes Tailscale shows as online.
+  Offline ones get an "Offline in Tailscale, skipped" line instead of `UNREACHABLE` errors, and no
+  longer stop `reboot.yml`/`release-upgrade.yml` (which halt on any failure). A probe that is online
+  in Tailscale but can't be reached over SSH still fails, since that is a real problem. If
+  `tailscale status` doesn't work on the controller, nothing is skipped. Ad-hoc commands
+  (`ansible netprobes -m ping`) aren't filtered.
 
 - Docker container stats are intentionally off (the `beszel` user is not in the `docker` group).
 - The agent is installed to `/usr/local/bin/beszel-agent`. Hosts previously set up with the

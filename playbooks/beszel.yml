@@ -2,8 +2,11 @@
 # Install / update the Beszel agent.
 #   ansible-playbook playbooks/beszel.yml --ask-vault-pass
 #   ansible-playbook playbooks/beszel.yml --ask-vault-pass -e agent_state=absent   # uninstall
+- name: Find online netprobes
+  ansible.builtin.import_playbook: online.yml
+
 - name: Beszel agent
-  hosts: netprobes
+  hosts: netprobes_online
   pre_tasks:
     - name: Check the hub token is available
       ansible.builtin.assert:
