@@ -22,15 +22,20 @@ sudo password.
 
 | Play | Hosts | How |
 |---|---|---|
-| Maintenance (netprobes) | `netprobes` | In batches of a quarter of the probes (`serial: 25%`), rebooted when needed |
+| Maintenance (netprobes) | `netprobes_online` | In batches of a quarter of the probes (`serial: 25%`), rebooted when needed |
 | Maintenance (controller) | `controller` | Runs last and is never rebooted by Ansible |
 
 **Why batches:** while one batch upgrades and reboots, the other probes keep measuring, so
 there's never a gap across the whole fleet. A bad update also shows up on a few probes before it
 reaches all of them. Ansible only stops the whole run if *every* host in a batch fails, though.
 
-**Why the controller runs last:** it hosts the Beszel hub in Docker, and a Docker upgrade restarts
-the hub. Running it after the probes keeps that restart out of the way. Ansible can't reboot the
+Probes that are offline in Tailscale are skipped before the batches are made (see
+[Offline probes](../README.md#notes)), so they don't count towards a batch or show up as `UNREACHABLE`.
+
+**Why the controller runs last:** it is the machine Ansible runs on, so package upgrades there
+(Python, Docker, ...) could disturb a run that's still busy with the probes. Running it after
+the probes keeps that out of the way. The Beszel hub runs bare metal and is updated with
+`beszel-hub.yml`, not by maintenance. Ansible can't reboot the
 machine it runs on, so the role always skips the reboot there. When the report shows
 `reboot_required: true` for the controller, reboot it yourself.
 

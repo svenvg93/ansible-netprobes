@@ -26,7 +26,8 @@ a stuck probe.
 
 Probes are rebooted in batches of a quarter of the fleet (`serial: 25%`), so the others keep
 measuring. Unlike maintenance, the run **stops at the first probe that fails** (doesn't come back,
-or the Beszel check fails), before the next batch is rebooted.
+or the Beszel check fails), before the next batch is rebooted. Probes that are already offline in
+Tailscale are skipped up front and don't stop the run.
 
 ## Settings
 

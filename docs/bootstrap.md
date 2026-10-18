@@ -16,6 +16,8 @@ current state first, so running it again on an existing probe only fixes what ha
 
 Tags: `timezone`, `packages`, `tailscale`, `ubuntu_pro`, `speedtest`.
 
+Probes that are offline in Tailscale are skipped with a note; run it for them once they're back.
+
 For a completely new probe, `playbooks/site.yml` runs bootstrap, then the Beszel agent, then
 maintenance.
 

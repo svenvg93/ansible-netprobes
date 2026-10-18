@@ -12,7 +12,7 @@
   roles:
     - maintenance
 
-# Last, so a Docker upgrade restarting the Beszel hub doesn't happen mid-run. Never rebooted.
+# Last, so upgrades on the machine Ansible runs on can't disturb the probe run. Never rebooted.
 - name: Maintenance (controller)
   hosts: controller
   roles:

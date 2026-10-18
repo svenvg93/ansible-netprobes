@@ -19,7 +19,8 @@ maintenance.
 | Repos still switched off after an upgrade | see [Repairing the repos only](#repairing-the-repos-only) |
 
 The playbook refuses to run without `--limit`, so the whole fleet can never be upgraded by
-accident. Probes are always done one after another, and the run stops at the first failure.
+accident. Probes are always done one after another, and the run stops at the first failure. A probe that
+is offline in Tailscale is skipped ("Offline in Tailscale, skipped") and isn't upgraded.
 
 Expect each probe to be offline for a while (typically 15–45 minutes), including two reboots.
 

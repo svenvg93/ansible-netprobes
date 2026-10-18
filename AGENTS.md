@@ -5,9 +5,8 @@ User-facing docs are in `README.md`; this file covers what an agent needs on top
 
 ## What this is
 
-Ansible for a fleet of 16 Ubuntu 26.04 "netprobes" (`netprobe01`–`netprobe16`) that run
-internet measurements. Probes that were offline during the 2026-10-10 upgrade (04, 09, 10, 12, 15)
-are still on 24.04. This repo handles:
+Ansible for a fleet of 17 Ubuntu 26.04 "netprobes" (`netprobe01`–`netprobe17`) that run
+internet measurements. This repo handles:
 
 - **bootstrap** – timezone, package cleanup, snap removal, Tailscale auto-update, Ookla Speedtest CLI
 - **beszel** – Beszel monitoring agent via the `community.beszel.agent` collection role, and the hub
@@ -29,8 +28,8 @@ Ignore `../ansible`: don't read it, copy from it or change it.
   Its sudo needs a password, so runs that include it need `-K`, which you can't type. Use `--limit netprobes`.
 - **Netprobes** are reached over **Tailscale SSH** as `root` (`ansible_become: false`), with the
   address `<name>.tail294b9a.ts.net`. No password and no `-K`.
-- Several probes are offline in Tailscale (as of 2026-10-10: 04, 09, 10, 12, 15). They're unused for
-  now, not retired: keep them in the inventory and the numbering. The netprobe playbooks first import
+- Probes can be offline in Tailscale for a while (as of 2026-10-18 all 17 are online). Offline ones
+  are unused for now, not retired: keep them in the inventory and the numbering. The netprobe playbooks first import
   `playbooks/online.yml`, which groups probes by the controller's `tailscale status` into
   `netprobes_online`/`netprobes_offline`; plays target `netprobes_online`, so offline probes are
   skipped with a note. New netprobe playbooks must do the same. Ad-hoc `ansible netprobes ...` still
@@ -105,10 +104,9 @@ ansible-playbook playbooks/<play>.yml --limit netprobe01 --check --diff   # dry 
 - `community.beszel` installs the agent to `/usr/local/bin`. Some probes still have
   `/opt/beszel-agent` left over from the official install script.
 
-## Open items (as of 2026-10-10)
+## Open items (as of 2026-10-18)
 
-- Release upgrade to 26.04: done for all reachable probes. 04, 09, 10, 12 and 15 still need it
-  once they're back online (the user runs it, not you).
+- Release upgrade to 26.04: done for all 17 probes.
 - GitHub Actions workflow for lint/syntax checks: requested, not started.
 - Push to GitHub is blocked until the user re-runs `gh auth login` (the stored token is invalid).
 - Discussed but not decided: scheduled maintenance (systemd timer on `cpe-srv`), `log_path` in

@@ -15,7 +15,8 @@ Galaxy. This repo supplies the settings and a check before and after.
 | After updating the `community.beszel` collection | dry run first, then the normal run (see "Upgrading") |
 | Removing the agent | `ansible-playbook playbooks/beszel.yml --ask-vault-pass -e agent_state=absent` |
 
-Add `--check --diff` to any of these for a dry run.
+Add `--check --diff` to any of these for a dry run. Probes that are offline in Tailscale are
+skipped with a note; run it for them once they're back.
 
 ## How the agent talks to the hub
 
